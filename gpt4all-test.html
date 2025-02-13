@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT4All Simple Test</title>
+</head>
+<body>
+    <h2>GPT4All API Test</h2>
+    
+    <!-- Status Section -->
+    <div>
+        <p>Status: <span id="status">Checking connection...</span></p>
+        <p>Model: <span id="model-info">-</span></p>
+    </div>
+
+    <!-- Chat Section -->
+    <div style="margin-top: 20px;">
+        <input type="text" 
+               id="userInput" 
+               placeholder="Type your message"
+               style="width: 300px; padding: 5px;">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <!-- Response Section -->
+    <div style="margin-top: 20px;">
+        <p>Response:</p>
+        <div id="response" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px;"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:4891/v1';
+        let isConnected = false;
+
+        // Check connection on load
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_URL}/models`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.data && data.data.length > 0) {
+                        isConnected = true;
+                        document.getElementById('status').textContent = 'Connected';
+                        document.getElementById('model-info').textContent = data.data[0].id;
+                        console.log('Available models:', data);
+                    } else {
+                        throw new Error('No models found');
+                    }
+                } else {
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Connection failed';
+                document.getElementById('model-info').textContent = 'Error: ' + error.message;
+                console.error('Connection error:', error);
+            }
+        }
+
+        // Send message to API
+        async function sendMessage() {
+            const userInput = document.getElementById('userInput').value.trim();
+            const responseDiv = document.getElementById('response');
+            
+            if (!userInput) return;
+            if (!isConnected) {
+                alert('Not connected to API');
+                return;
+            }
+
+            try {
+                responseDiv.textContent = 'Thinking...';
+                
+                const response = await fetch(`${API_URL}/chat/completions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        messages: [{
+                            role: 'user',
+                            content: userInput
+                        }],
+                        model: document.getElementById('model-info').textContent,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+
+                const data = await response.json();
+                if (data.choices && data.choices[0] && data.choices[0].message) {
+                    responseDiv.textContent = data.choices[0].message.content;
+                } else {
+                    throw new Error('Invalid response format');
+                }
+
+            } catch (error) {
+                responseDiv.textContent = 'Error: ' + error.message;
+                console.error('Request error:', error);
+            }
+        }
+
+        // Handle Enter key
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Start connection check
+        checkConnection();
+    </script>
+</body>
+</html>
