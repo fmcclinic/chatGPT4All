@@ -3,43 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPT4All Simple Test</title>
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>GPT4All Chat Interface</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        .connected { background-color: #28a745; }
+        .disconnected { background-color: #dc3545; }
+
+        .input-section {
+            margin: 20px 0;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .response-section {
+            margin-top: 20px;
+        }
+
+        #response {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error-message {
+            color: #dc3545;
+            padding: 10px;
+            background: #f8d7da;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .warning-message {
+            color: #856404;
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
 </head>
 <body>
-    <h2>GPT4All API Test</h2>
-    
-    <!-- Status Section -->
-    <div>
-        <p>Status: <span id="status">Checking connection...</span></p>
-        <p>Model: <span id="model-info">-</span></p>
-    </div>
+    <div class="container">
+        <h1>GPT4All Chat Interface</h1>
+        
+        <div class="status-section">
+            <div>
+                <span class="status-indicator" id="statusIndicator"></span>
+                Status: <span id="status">Checking connection...</span>
+            </div>
+            <div>Model: <span id="model-info">-</span></div>
+        </div>
 
-    <!-- Chat Section -->
-    <div style="margin-top: 20px;">
-        <input type="text" 
-               id="userInput" 
-               placeholder="Type your message"
-               style="width: 300px; padding: 5px;">
-        <button onclick="sendMessage()">Send</button>
-    </div>
+        <div class="input-section">
+            <input type="text" 
+                   id="userInput" 
+                   placeholder="Type your message..."
+                   autocomplete="off">
+            <button onclick="sendMessage()" id="sendButton">
+                <i class="fas fa-paper-plane"></i> Send
+            </button>
+        </div>
 
-    <!-- Response Section -->
-    <div style="margin-top: 20px;">
-        <p>Response:</p>
-        <div id="response" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px;"></div>
+        <div class="response-section">
+            <h3>Response:</h3>
+            <div id="response"></div>
+        </div>
     </div>
 
     <script>
-        const API_URL = 'http://localhost:4891/v1';
+        // Determine API URL based on protocol
+        const API_URL = window.location.protocol === 'https:' 
+            ? 'https://localhost:4891/v1'
+            : 'http://localhost:4891/v1';
+        
         let isConnected = false;
 
-        // Check connection on load
+        function updateStatusUI(connected, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('status');
+            
+            indicator.className = 'status-indicator ' + (connected ? 'connected' : 'disconnected');
+            statusText.textContent = message;
+            
+            const sendButton = document.getElementById('sendButton');
+            const userInput = document.getElementById('userInput');
+            
+            sendButton.disabled = !connected;
+            userInput.disabled = !connected;
+        }
+
         async function checkConnection() {
             try {
+                updateStatusUI(false, 'Checking connection...');
+
+                if (window.location.protocol === 'https:') {
+                    throw new Error('Cannot connect to local API from HTTPS. Please use HTTP or localhost.');
+                }
+
                 const response = await fetch(`${API_URL}/models`, {
-                    method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Connection': 'keep-alive'
                     }
                 });
 
@@ -47,8 +175,8 @@
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
                         isConnected = true;
-                        document.getElementById('status').textContent = 'Connected';
                         document.getElementById('model-info').textContent = data.data[0].id;
+                        updateStatusUI(true, 'Connected');
                         console.log('Available models:', data);
                     } else {
                         throw new Error('No models found');
@@ -57,24 +185,39 @@
                     throw new Error(`HTTP status ${response.status}`);
                 }
             } catch (error) {
-                document.getElementById('status').textContent = 'Connection failed';
-                document.getElementById('model-info').textContent = 'Error: ' + error.message;
                 console.error('Connection error:', error);
+                isConnected = false;
+                updateStatusUI(false, 'Connection failed: ' + error.message);
+                
+                if (window.location.protocol === 'https:') {
+                    const response = document.getElementById('response');
+                    response.innerHTML = `
+                        <div class="error-message">
+                            <strong>Connection Error:</strong><br>
+                            This page is running on HTTPS and cannot connect to the local API.<br>
+                            Please either:
+                            <ul>
+                                <li>Use HTTP instead of HTTPS</li>
+                                <li>Run the page locally</li>
+                                <li>Access via localhost</li>
+                            </ul>
+                        </div>`;
+                }
             }
         }
 
-        // Send message to API
         async function sendMessage() {
-            const userInput = document.getElementById('userInput').value.trim();
+            const userInput = document.getElementById('userInput');
             const responseDiv = document.getElementById('response');
+            const sendButton = document.getElementById('sendButton');
+            const inputText = userInput.value.trim();
             
-            if (!userInput) return;
-            if (!isConnected) {
-                alert('Not connected to API');
-                return;
-            }
+            if (!inputText || !isConnected) return;
 
             try {
+                // Disable input while processing
+                userInput.disabled = true;
+                sendButton.disabled = true;
                 responseDiv.textContent = 'Thinking...';
                 
                 const response = await fetch(`${API_URL}/chat/completions`, {
@@ -86,7 +229,7 @@
                     body: JSON.stringify({
                         messages: [{
                             role: 'user',
-                            content: userInput
+                            content: inputText
                         }],
                         model: document.getElementById('model-info').textContent,
                         stream: false
@@ -100,25 +243,38 @@
                 const data = await response.json();
                 if (data.choices && data.choices[0] && data.choices[0].message) {
                     responseDiv.textContent = data.choices[0].message.content;
+                    userInput.value = ''; // Clear input on success
                 } else {
                     throw new Error('Invalid response format');
                 }
 
             } catch (error) {
-                responseDiv.textContent = 'Error: ' + error.message;
+                responseDiv.innerHTML = `
+                    <div class="error-message">
+                        Error: ${error.message}
+                    </div>`;
                 console.error('Request error:', error);
+            } finally {
+                // Re-enable input
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus();
             }
         }
 
         // Handle Enter key
         document.getElementById('userInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         });
 
-        // Start connection check
+        // Initial connection check
         checkConnection();
+
+        // Periodic connection check every 30 seconds
+        setInterval(checkConnection, 30000);
     </script>
 </body>
 </html>
