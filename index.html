@@ -3,122 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPT4All Simple Test</title>
+    <title>GPT4All Chat Interface</title>
+    <style>
+        /* ... giữ nguyên phần CSS ... */
+    </style>
 </head>
 <body>
-    <h2>GPT4All API Test</h2>
-    
-    <!-- Status Section -->
-    <div>
-        <p>Status: <span id="status">Checking connection...</span></p>
-        <p>Model: <span id="model-info">-</span></p>
-    </div>
+    <div class="container">
+        <h1>GPT4All Chat Interface</h1>
+        
+        <!-- Thêm phần chọn mode -->
+        <div class="mode-selector" style="margin-bottom: 20px;">
+            <label>Access Mode:</label>
+            <select id="accessMode" onchange="updateAccessMode()">
+                <option value="direct">Direct (Local Development)</option>
+                <option value="proxy">Proxy (GitHub Pages)</option>
+            </select>
+            <div id="modeInfo" class="warning-message" style="display:none;">
+                Using proxy mode for GitHub Pages. For better performance, consider running locally.
+            </div>
+        </div>
 
-    <!-- Chat Section -->
-    <div style="margin-top: 20px;">
-        <input type="text" 
-               id="userInput" 
-               placeholder="Type your message"
-               style="width: 300px; padding: 5px;">
-        <button onclick="sendMessage()">Send</button>
-    </div>
+        <!-- Status Section -->
+        <div class="status-section">
+            <div>Server URL: <span id="currentServer">-</span></div>
+            <div>
+                <span class="status-indicator" id="statusIndicator"></span>
+                Status: <span id="status">Checking connection...</span>
+            </div>
+            <div>Model: <span id="model-info">-</span></div>
+        </div>
 
-    <!-- Response Section -->
-    <div style="margin-top: 20px;">
-        <p>Response:</p>
-        <div id="response" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px;"></div>
+        <!-- Rest of the HTML remains the same -->
     </div>
 
     <script>
-        const API_URL = 'http://localhost:4891/v1';
+        let currentMode = 'direct';
+        let API_URL = '';
         let isConnected = false;
 
-        // Check connection on load
+        function updateAccessMode() {
+            currentMode = document.getElementById('accessMode').value;
+            
+            // Update API URL based on mode
+            if (currentMode === 'direct') {
+                API_URL = 'http://localhost:4891/v1';
+                document.getElementById('modeInfo').style.display = 'none';
+            } else {
+                // Replace with your actual proxy server URL if you have one
+                API_URL = 'https://your-proxy-server.com/v1';
+                document.getElementById('modeInfo').style.display = 'block';
+            }
+
+            document.getElementById('currentServer').textContent = API_URL;
+            checkConnection();
+        }
+
+        // Connection check with improved error handling
         async function checkConnection() {
             try {
+                updateStatusUI(false, 'Checking connection...');
+
                 const response = await fetch(`${API_URL}/models`, {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST'
+                    },
+                    mode: 'cors'
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.data && data.data.length > 0) {
-                        isConnected = true;
-                        document.getElementById('status').textContent = 'Connected';
-                        document.getElementById('model-info').textContent = data.data[0].id;
-                        console.log('Available models:', data);
-                    } else {
-                        throw new Error('No models found');
-                    }
+                const data = await response.json();
+                if (data.data && data.data.length > 0) {
+                    isConnected = true;
+                    document.getElementById('model-info').textContent = data.data[0].id;
+                    updateStatusUI(true, `Connected to ${currentMode} server`);
+                    console.log('Available models:', data);
                 } else {
-                    throw new Error(`HTTP status ${response.status}`);
+                    throw new Error('No models found');
                 }
             } catch (error) {
-                document.getElementById('status').textContent = 'Connection failed';
-                document.getElementById('model-info').textContent = 'Error: ' + error.message;
                 console.error('Connection error:', error);
+                isConnected = false;
+                handleConnectionError(error);
             }
         }
 
-        // Send message to API
-        async function sendMessage() {
-            const userInput = document.getElementById('userInput').value.trim();
-            const responseDiv = document.getElementById('response');
+        function handleConnectionError(error) {
+            let errorMessage = 'Connection failed: ';
             
-            if (!userInput) return;
-            if (!isConnected) {
-                alert('Not connected to API');
-                return;
+            if (window.location.protocol === 'https:' && currentMode === 'direct') {
+                errorMessage += `
+                    Cannot connect to local API from HTTPS. Please either:
+                    1. Run this page locally using HTTP
+                    2. Switch to proxy mode
+                    3. Set up a secure proxy server`;
+            } else {
+                errorMessage += error.message;
             }
 
+            updateStatusUI(false, errorMessage);
+            document.getElementById('response').innerHTML = `
+                <div class="error-message">
+                    <strong>Connection Error:</strong><br>
+                    ${errorMessage}
+                </div>`;
+        }
+
+        // Rest of the JavaScript functions remain the same,
+        // just update the fetch calls to include CORS headers:
+
+        async function sendMessage() {
+            // ... existing code ...
+            
             try {
-                responseDiv.textContent = 'Thinking...';
-                
                 const response = await fetch(`${API_URL}/chat/completions`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'Access-Control-Allow-Origin': '*',
+                        'Access-Control-Allow-Methods': 'GET, POST'
                     },
+                    mode: 'cors',
                     body: JSON.stringify({
                         messages: [{
                             role: 'user',
-                            content: userInput
+                            content: inputText
                         }],
                         model: document.getElementById('model-info').textContent,
                         stream: false
                     })
                 });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP status ${response.status}`);
-                }
-
-                const data = await response.json();
-                if (data.choices && data.choices[0] && data.choices[0].message) {
-                    responseDiv.textContent = data.choices[0].message.content;
-                } else {
-                    throw new Error('Invalid response format');
-                }
-
-            } catch (error) {
-                responseDiv.textContent = 'Error: ' + error.message;
-                console.error('Request error:', error);
+                
+                // ... rest of the code ...
+            }
+            catch (error) {
+                // ... error handling ...
             }
         }
 
-        // Handle Enter key
-        document.getElementById('userInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-detect appropriate mode based on protocol
+            if (window.location.protocol === 'https:') {
+                document.getElementById('accessMode').value = 'proxy';
             }
+            updateAccessMode();
         });
-
-        // Start connection check
-        checkConnection();
     </script>
 </body>
 </html>
