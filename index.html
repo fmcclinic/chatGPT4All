@@ -9,24 +9,6 @@
     <div>
         <h1>Friend Medical GPT4All</h1>
         
-        <!-- GitHub Pages Warning -->
-        <div id="github-warning" style="display: none;">
-            <strong>⚠️ Lưu ý quan trọng:</strong><br>
-            Bạn đang truy cập từ GitHub Pages (HTTPS). Để sử dụng chatbot, vui lòng:
-            <ol>
-                <li>Tải và cài đặt GPT4All trên máy tính</li>
-                <li>Bật API Server trong Settings của GPT4All</li>
-                <li>Sau đó truy cập trang web này qua một trong các cách sau:
-                    <ul>
-                        <li>Mở file index.html trực tiếp từ máy</li>
-                        <li>Chạy local server: python -m http.server 8000</li>
-                        <li>Truy cập: http://localhost:8000</li>
-                    </ul>
-                </li>
-            </ol>
-            Link tải GPT4All: <a href="https://gpt4all.io" target="_blank">https://gpt4all.io</a>
-        </div>
-
         <!-- Status Section -->
         <div>
             <p>Status: <span id="status">Checking connection...</span></p>
@@ -49,19 +31,43 @@
     </div>
 
     <script>
-        // Determine if running on GitHub Pages
-        function isGitHubPages() {
-            return window.location.hostname.includes('github.io');
-        }
-
-        // Set API URL based on protocol
-        const API_URL = window.location.protocol === 'https:' 
-            ? 'https://localhost:4891/v1'
-            : 'http://localhost:4891/v1';
-        
+        const API_URL = 'http://localhost:4891/v1';
         let isConnected = false;
 
-        // Update UI based on connection status
+        async function makeRequest(endpoint, options = {}) {
+            const defaultOptions = {
+                mode: 'cors',
+                cache: 'no-cache',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                }
+            };
+
+            const finalOptions = { ...defaultOptions, ...options };
+            
+            try {
+                // First make an OPTIONS request
+                if (options.method === 'POST') {
+                    await fetch(endpoint, { 
+                        method: 'OPTIONS',
+                        headers: finalOptions.headers
+                    });
+                }
+
+                // Then make the actual request
+                const response = await fetch(endpoint, finalOptions);
+                return response;
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
+        }
+
         function updateStatusUI(connected, message) {
             const statusText = document.getElementById('status');
             const sendButton = document.getElementById('sendButton');
@@ -72,21 +78,10 @@
             userInput.disabled = !connected;
         }
 
-        // Check connection to GPT4All API
         async function checkConnection() {
-            if (isGitHubPages()) {
-                document.getElementById('github-warning').style.display = 'block';
-                updateStatusUI(false, 'Cannot connect when running on GitHub Pages');
-                return;
-            }
-
             try {
-                const response = await fetch(`${API_URL}/models`, {
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-
+                const response = await makeRequest(`${API_URL}/models`);
+                
                 if (response.ok) {
                     const data = await response.json();
                     if (data.data && data.data.length > 0) {
@@ -107,7 +102,6 @@
             }
         }
 
-        // Send message to GPT4All
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
             const responseDiv = document.getElementById('response');
@@ -121,12 +115,8 @@
                 sendButton.disabled = true;
                 responseDiv.textContent = 'Thinking...';
                 
-                const response = await fetch(`${API_URL}/chat/completions`, {
+                const response = await makeRequest(`${API_URL}/chat/completions`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
                     body: JSON.stringify({
                         messages: [{
                             role: 'user',
@@ -159,7 +149,6 @@
             }
         }
 
-        // Handle Enter key
         document.getElementById('userInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
