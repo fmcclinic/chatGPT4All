@@ -3,283 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>Friend Medical GPT4All</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            color: #2c3e50;
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .status-section {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid #007bff;
-        }
-
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-
-        .connected { 
-            background-color: #28a745; 
-            box-shadow: 0 0 5px #28a745;
-        }
-
-        .disconnected { 
-            background-color: #dc3545;
-            box-shadow: 0 0 5px #dc3545;
-        }
-
-        .chat-section {
-            margin: 20px 0;
-        }
-
-        .input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #007bff;
-            outline: none;
-            box-shadow: 0 0 5px rgba(0,123,255,0.3);
-        }
-
-        button {
-            background: #007bff;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        button:hover {
-            background: #0056b3;
-            transform: translateY(-1px);
-        }
-
-        button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .response-section {
-            margin-top: 20px;
-        }
-
-        #response {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            min-height: 100px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            border: 1px solid #dee2e6;
-        }
-
-        .error-message {
-            color: #dc3545;
-            padding: 15px;
-            background: #f8d7da;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 1px solid #f5c6cb;
-        }
-
-        .warning-message {
-            color: #856404;
-            background-color: #fff3cd;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 1px solid #ffeeba;
-        }
-
-        .thinking {
-            color: #666;
-            font-style: italic;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-
-            .container {
-                padding: 15px;
-            }
-
-            input[type="text"] {
-                padding: 10px;
-            }
-
-            button {
-                padding: 10px 15px;
-            }
-        }
-
-        /* Loading Animation */
-        .loading {
-            display: inline-block;
-            position: relative;
-            width: 20px;
-            height: 20px;
-        }
-
-        .loading:after {
-            content: '';
-            display: block;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            border-color: #fff transparent #fff transparent;
-            animation: loading 1.2s linear infinite;
-        }
-
-        @keyframes loading {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Toast Notification */
-        .toast {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background: #333;
-            color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: none;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    </style>
 </head>
 <body>
-    <div class="container">
+    <div>
         <h1>Friend Medical GPT4All</h1>
         
-        <div class="status-section">
-            <div>
-                <span class="status-indicator" id="statusIndicator"></span>
-                Status: <span id="status">Checking connection...</span>
-            </div>
-            <div>Model: <span id="model-info">-</span></div>
+        <!-- GitHub Pages Warning -->
+        <div id="github-warning" style="display: none;">
+            <strong>⚠️ Lưu ý quan trọng:</strong><br>
+            Bạn đang truy cập từ GitHub Pages (HTTPS). Để sử dụng chatbot, vui lòng:
+            <ol>
+                <li>Tải và cài đặt GPT4All trên máy tính</li>
+                <li>Bật API Server trong Settings của GPT4All</li>
+                <li>Sau đó truy cập trang web này qua một trong các cách sau:
+                    <ul>
+                        <li>Mở file index.html trực tiếp từ máy</li>
+                        <li>Chạy local server: python -m http.server 8000</li>
+                        <li>Truy cập: http://localhost:8000</li>
+                    </ul>
+                </li>
+            </ol>
+            Link tải GPT4All: <a href="https://gpt4all.io" target="_blank">https://gpt4all.io</a>
         </div>
 
-        <div class="chat-section">
-            <div class="input-group">
-                <input type="text" 
-                       id="userInput" 
-                       placeholder="Nhập câu hỏi của bạn..."
-                       autocomplete="off">
-                <button onclick="sendMessage()" id="sendButton">
-                    <span>Gửi</span>
-                    <i class="fas fa-paper-plane"></i>
-                </button>
-            </div>
+        <!-- Status Section -->
+        <div>
+            <p>Status: <span id="status">Checking connection...</span></p>
+            <p>Model: <span id="model-info">-</span></p>
         </div>
 
-        <div class="response-section">
+        <!-- Chat Section -->
+        <div>
+            <input type="text" 
+                   id="userInput" 
+                   placeholder="Nhập câu hỏi của bạn...">
+            <button onclick="sendMessage()" id="sendButton">Gửi</button>
+        </div>
+
+        <!-- Response Section -->
+        <div>
             <h3>Phản hồi:</h3>
             <div id="response"></div>
         </div>
     </div>
 
-    <div class="toast" id="toast"></div>
-
     <script>
-        // Determine API URL based on protocol
+        // Determine if running on GitHub Pages
+        function isGitHubPages() {
+            return window.location.hostname.includes('github.io');
+        }
+
+        // Set API URL based on protocol
         const API_URL = window.location.protocol === 'https:' 
             ? 'https://localhost:4891/v1'
             : 'http://localhost:4891/v1';
         
         let isConnected = false;
 
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 3000);
-        }
-
+        // Update UI based on connection status
         function updateStatusUI(connected, message) {
-            const indicator = document.getElementById('statusIndicator');
             const statusText = document.getElementById('status');
             const sendButton = document.getElementById('sendButton');
             const userInput = document.getElementById('userInput');
             
-            indicator.className = 'status-indicator ' + (connected ? 'connected' : 'disconnected');
             statusText.textContent = message;
-            
             sendButton.disabled = !connected;
             userInput.disabled = !connected;
-
-            if (!connected) {
-                showToast('Mất kết nối đến server');
-            }
         }
 
+        // Check connection to GPT4All API
         async function checkConnection() {
+            if (isGitHubPages()) {
+                document.getElementById('github-warning').style.display = 'block';
+                updateStatusUI(false, 'Cannot connect when running on GitHub Pages');
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_URL}/models`, {
                     headers: {
                         'Accept': 'application/json'
-                    },
-                    mode: 'cors'
+                    }
                 });
 
                 if (response.ok) {
@@ -287,10 +92,10 @@
                     if (data.data && data.data.length > 0) {
                         isConnected = true;
                         document.getElementById('model-info').textContent = data.data[0].id;
-                        updateStatusUI(true, 'Kết nối thành công');
+                        updateStatusUI(true, 'Connected');
                         console.log('Available models:', data);
                     } else {
-                        throw new Error('Không tìm thấy model');
+                        throw new Error('No models found');
                     }
                 } else {
                     throw new Error(`HTTP status ${response.status}`);
@@ -298,24 +103,11 @@
             } catch (error) {
                 console.error('Connection error:', error);
                 isConnected = false;
-                updateStatusUI(false, 'Lỗi kết nối: ' + error.message);
-                
-                if (window.location.protocol === 'https:') {
-                    document.getElementById('response').innerHTML = `
-                        <div class="error-message">
-                            <strong>Lỗi Kết nối:</strong><br>
-                            Trang web đang chạy trên HTTPS và không thể kết nối với API local.<br>
-                            Vui lòng:
-                            <ul>
-                                <li>Sử dụng HTTP thay vì HTTPS</li>
-                                <li>Chạy trang web locally</li>
-                                <li>Truy cập qua localhost</li>
-                            </ul>
-                        </div>`;
-                }
+                updateStatusUI(false, 'Connection failed: ' + error.message);
             }
         }
 
+        // Send message to GPT4All
         async function sendMessage() {
             const userInput = document.getElementById('userInput');
             const responseDiv = document.getElementById('response');
@@ -325,11 +117,9 @@
             if (!inputText || !isConnected) return;
 
             try {
-                // Disable input while processing
                 userInput.disabled = true;
                 sendButton.disabled = true;
-                sendButton.innerHTML = '<span class="loading"></span> Đang xử lý...';
-                responseDiv.innerHTML = '<div class="thinking">Đang suy nghĩ...</div>';
+                responseDiv.textContent = 'Thinking...';
                 
                 const response = await fetch(`${API_URL}/chat/completions`, {
                     method: 'POST',
@@ -337,7 +127,6 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    mode: 'cors',
                     body: JSON.stringify({
                         messages: [{
                             role: 'user',
@@ -355,23 +144,17 @@
                 const data = await response.json();
                 if (data.choices && data.choices[0] && data.choices[0].message) {
                     responseDiv.textContent = data.choices[0].message.content;
-                    userInput.value = ''; // Clear input on success
+                    userInput.value = '';
                 } else {
                     throw new Error('Invalid response format');
                 }
 
             } catch (error) {
-                responseDiv.innerHTML = `
-                    <div class="error-message">
-                        <strong>Lỗi:</strong> ${error.message}
-                    </div>`;
+                responseDiv.textContent = 'Error: ' + error.message;
                 console.error('Request error:', error);
-                showToast('Có lỗi xảy ra khi gửi tin nhắn');
             } finally {
-                // Re-enable input
                 userInput.disabled = false;
                 sendButton.disabled = false;
-                sendButton.innerHTML = '<span>Gửi</span><i class="fas fa-paper-plane"></i>';
                 userInput.focus();
             }
         }
